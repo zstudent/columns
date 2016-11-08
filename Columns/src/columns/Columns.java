@@ -30,142 +30,135 @@ public class Columns extends Applet implements Runnable {
 	Color MyStyles[] = { Color.black, Color.cyan, Color.blue, Color.red,
 			Color.green, Color.yellow, Color.pink, Color.magenta, Color.black };
 
-	int Level, i, j, ii, k, ch;
+	int i;
+
+	int j;
+
+	int ii;
+
+	int k;
+
+	int ch;
 	long Score, DScore, tc;
 	Font fCourier;
 	boolean NoChanges = true, KeyPressed = false;
-	Graphics _gr;
+	Graphics gr;
 
-	Thread thr = null;
-	
+	Thread thread = null;
+
 	Model model = new Model();
-	
 
-	void CheckNeighbours(int a, int b, int c, int d, int i, int j) {
-		if ((model.getFieldNew()[j][i] == model.getFieldNew()[a][b]) && (model.getFieldNew()[j][i] == model.getFieldNew()[c][d])) {
+	void checkNeighbours(int a, int b, int c, int d, int i, int j) {
+		if ((model.getFieldNew()[j][i] == model.getFieldNew()[a][b])
+				&& (model.getFieldNew()[j][i] == model.getFieldNew()[c][d])) {
 			model.getFieldOld()[a][b] = 0;
-			DrawBox(a, b, 8);
+			drawBox(a, b, 8);
 			model.getFieldOld()[j][i] = 0;
-			DrawBox(j, i, 8);
+			drawBox(j, i, 8);
 			model.getFieldOld()[c][d] = 0;
-			DrawBox(c, d, 8);
+			drawBox(c, d, 8);
 			NoChanges = false;
-			Score += (Level + 1) * 10;
+			Score += (model.getLevel() + 1) * 10;
 			k++;
 		}
-		;
 	}
 
-	void Delay(long t) {
+	void delay(long t) {
 		try {
 			Thread.sleep(t);
 		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
-		;
 	}
 
-	void DrawBox(int x, int y, int c) {
+	void drawBox(int x, int y, int c) {
 		if (c == 0) {
-			_gr.setColor(Color.black);
-			_gr.fillRect(LeftBorder + x * SL - SL, TopBorder + y * SL - SL, SL,
+			gr.setColor(Color.black);
+			gr.fillRect(LeftBorder + x * SL - SL, TopBorder + y * SL - SL, SL,
 					SL);
-			_gr.drawRect(LeftBorder + x * SL - SL, TopBorder + y * SL - SL, SL,
+			gr.drawRect(LeftBorder + x * SL - SL, TopBorder + y * SL - SL, SL,
 					SL);
 		} else if (c == 8) {
-			_gr.setColor(Color.white);
-			_gr.drawRect(LeftBorder + x * SL - SL + 1, TopBorder + y * SL - SL
+			gr.setColor(Color.white);
+			gr.drawRect(LeftBorder + x * SL - SL + 1, TopBorder + y * SL - SL
 					+ 1, SL - 2, SL - 2);
-			_gr.drawRect(LeftBorder + x * SL - SL + 2, TopBorder + y * SL - SL
+			gr.drawRect(LeftBorder + x * SL - SL + 2, TopBorder + y * SL - SL
 					+ 2, SL - 4, SL - 4);
-			_gr.setColor(Color.black);
-			_gr.fillRect(LeftBorder + x * SL - SL + 3, TopBorder + y * SL - SL
+			gr.setColor(Color.black);
+			gr.fillRect(LeftBorder + x * SL - SL + 3, TopBorder + y * SL - SL
 					+ 3, SL - 6, SL - 6);
 		} else {
-			_gr.setColor(MyStyles[c]);
-			_gr.fillRect(LeftBorder + x * SL - SL, TopBorder + y * SL - SL, SL,
+			gr.setColor(MyStyles[c]);
+			gr.fillRect(LeftBorder + x * SL - SL, TopBorder + y * SL - SL, SL,
 					SL);
-			_gr.setColor(Color.black);
-			_gr.drawRect(LeftBorder + x * SL - SL, TopBorder + y * SL - SL, SL,
+			gr.setColor(Color.black);
+			gr.drawRect(LeftBorder + x * SL - SL, TopBorder + y * SL - SL, SL,
 					SL);
 		}
 		// g.setColor (Color.black);
 	}
 
-	void DrawField(Graphics g) {
-		int i, j;
-		for (i = 1; i <= Model.Depth; i++) {
-			for (j = 1; j <= Model.Width; j++) {
-				DrawBox(j, i, model.getFieldNew()[j][i]);
+	void drawField() {
+		for (int i = 1; i <= Model.Depth; i++) {
+			for (int j = 1; j <= Model.Width; j++) {
+				drawBox(j, i, model.getFieldNew()[j][i]);
 			}
 		}
 	}
 
-	void DrawFigure(Figure f) {
-		DrawBox(f.x, f.y, f.c[1]);
-		DrawBox(f.x, f.y + 1, f.c[2]);
-		DrawBox(f.x, f.y + 2, f.c[3]);
+	void drawFigure(Figure f) {
+		drawBox(f.x, f.y, f.c[1]);
+		drawBox(f.x, f.y + 1, f.c[2]);
+		drawBox(f.x, f.y + 2, f.c[3]);
 	}
 
-	void DropFigure(Figure f) {
+	void dropFigure(Figure f) {
 		int zz;
 		if (f.y < Model.Depth - 2) {
 			zz = Model.Depth;
 			while (model.getFieldNew()[f.x][zz] > 0)
 				zz--;
-			DScore = (((Level + 1) * (Model.Depth * 2 - f.y - zz) * 2) % 5) * 5;
+			DScore = (((model.getLevel() + 1) * (Model.Depth * 2 - f.y - zz) * 2) % 5) * 5;
 			f.y = zz - 2;
 		}
 	}
 
-	boolean FullField() {
-		int i;
-		for (i = 1; i <= Model.Width; i++) {
+	boolean isFieldFull() {
+		for (int i = 1; i <= Model.Width; i++) {
 			if (model.getFieldNew()[i][3] > 0)
 				return true;
 		}
 		return false;
 	}
 
-	void HideFigure(Figure f) {
-		DrawBox(f.x, f.y, 0);
-		DrawBox(f.x, f.y + 1, 0);
-		DrawBox(f.x, f.y + 2, 0);
+	void hideFigure(Figure f) {
+		drawBox(f.x, f.y, 0);
+		drawBox(f.x, f.y + 1, 0);
+		drawBox(f.x, f.y + 2, 0);
 	}
 
+	@Override
 	public void init() {
 		model.setFieldNew(new int[Model.Width + 2][Model.Depth + 2]);
 		model.setFieldOld(new int[Model.Width + 2][Model.Depth + 2]);
-		_gr = getGraphics();
+		gr = getGraphics();
 	}
 
+	@Override
 	public boolean keyDown(Event e, int k) {
 		KeyPressed = true;
 		ch = e.key;
 		return true;
 	}
 
+	@Override
 	public boolean lostFocus(Event e, Object w) {
 		KeyPressed = true;
 		ch = 'P';
 		return true;
 	}
 
-	void PackField() {
-		int i, j, n;
-		for (i = 1; i <= Model.Width; i++) {
-			n = Model.Depth;
-			for (j = Model.Depth; j > 0; j--) {
-				if (model.getFieldOld()[i][j] > 0) {
-					model.getFieldNew()[i][n] = model.getFieldOld()[i][j];
-					n--;
-				}
-			}
-			;
-			for (j = n; j > 0; j--)
-				model.getFieldNew()[i][j] = 0;
-		}
-	}
-
+	@Override
 	public void paint(Graphics g) {
 		// ShowHelp(g);
 
@@ -173,17 +166,12 @@ public class Columns extends Applet implements Runnable {
 
 		ShowLevel(g);
 		ShowScore(g);
-		DrawField(g);
-		DrawFigure(model.getFigure());
+		drawField();
+		drawFigure(model.getFigure());
 		requestFocus();
 	}
 
-	void PasteFigure(Figure f) {
-		model.getFieldNew()[f.x][f.y] = f.c[1];
-		model.getFieldNew()[f.x][f.y + 1] = f.c[2];
-		model.getFieldNew()[f.x][f.y + 2] = f.c[3];
-	}
-
+	@Override
 	public void run() {
 		for (i = 0; i < Model.Width + 1; i++) {
 			for (j = 0; j < Model.Depth + 1; j++) {
@@ -191,45 +179,49 @@ public class Columns extends Applet implements Runnable {
 				model.getFieldOld()[i][j] = 0;
 			}
 		}
-		Level = 0;
+		model.setLevel(0);
 		Score = 0;
 		j = 0;
 		k = 0;
-		_gr.setColor(Color.black);
+		gr.setColor(Color.black);
 		requestFocus();
 
 		do {
 			tc = System.currentTimeMillis();
 			model.setFigure(new Figure(Random));
-			DrawFigure(model.getFigure());
-			while ((model.getFigure().y < Model.Depth - 2) && (model.getFieldNew()[model.getFigure().x][model.getFigure().y + 3] == 0)) {
-				if ((int) (System.currentTimeMillis() - tc) > (Model.MaxLevel - Level)
-						* TimeShift + MinTimeShift) {
+			drawFigure(model.getFigure());
+			while ((model.getFigure().y < Model.Depth - 2)
+					&& (model.getFieldNew()[model.getFigure().x][model
+							.getFigure().y + 3] == 0)) {
+				if ((int) (System.currentTimeMillis() - tc) > (Model.MaxLevel - model
+						.getLevel()) * TimeShift + MinTimeShift) {
 					tc = System.currentTimeMillis();
-					HideFigure(model.getFigure());
+					hideFigure(model.getFigure());
 					model.getFigure().y++;
-					DrawFigure(model.getFigure());
+					drawFigure(model.getFigure());
 				}
 				DScore = 0;
 				do {
-					Delay(50);
+					delay(50);
 					if (KeyPressed) {
 						KeyPressed = false;
 						switch (ch) {
 						case Event.LEFT:
 							if ((model.getFigure().x > 1)
-									&& (model.getFieldNew()[model.getFigure().x - 1][model.getFigure().y + 2] == 0)) {
-								HideFigure(model.getFigure());
+									&& (model.getFieldNew()[model.getFigure().x - 1][model
+											.getFigure().y + 2] == 0)) {
+								hideFigure(model.getFigure());
 								model.getFigure().x--;
-								DrawFigure(model.getFigure());
+								drawFigure(model.getFigure());
 							}
 							break;
 						case Event.RIGHT:
 							if ((model.getFigure().x < Model.Width)
-									&& (model.getFieldNew()[model.getFigure().x + 1][model.getFigure().y + 2] == 0)) {
-								HideFigure(model.getFigure());
+									&& (model.getFieldNew()[model.getFigure().x + 1][model
+											.getFigure().y + 2] == 0)) {
+								hideFigure(model.getFigure());
 								model.getFigure().x++;
-								DrawFigure(model.getFigure());
+								drawFigure(model.getFigure());
 							}
 							break;
 						case Event.UP:
@@ -237,68 +229,68 @@ public class Columns extends Applet implements Runnable {
 							model.getFigure().c[1] = model.getFigure().c[2];
 							model.getFigure().c[2] = model.getFigure().c[3];
 							model.getFigure().c[3] = i;
-							DrawFigure(model.getFigure());
+							drawFigure(model.getFigure());
 							break;
 						case Event.DOWN:
 							i = model.getFigure().c[1];
 							model.getFigure().c[1] = model.getFigure().c[3];
 							model.getFigure().c[3] = model.getFigure().c[2];
 							model.getFigure().c[2] = i;
-							DrawFigure(model.getFigure());
+							drawFigure(model.getFigure());
 							break;
 						case ' ':
-							HideFigure(model.getFigure());
-							DropFigure(model.getFigure());
-							DrawFigure(model.getFigure());
+							hideFigure(model.getFigure());
+							dropFigure(model.getFigure());
+							drawFigure(model.getFigure());
 							tc = 0;
 							break;
 						case 'P':
 						case 'p':
 							while (!KeyPressed) {
-								HideFigure(model.getFigure());
-								Delay(500);
-								DrawFigure(model.getFigure());
-								Delay(500);
+								hideFigure(model.getFigure());
+								delay(500);
+								drawFigure(model.getFigure());
+								delay(500);
 							}
 							tc = System.currentTimeMillis();
 							break;
 						case '-':
-							if (Level > 0)
-								Level--;
+							if (model.getLevel() > 0)
+								model.setLevel(model.getLevel() - 1);
 							k = 0;
-							ShowLevel(_gr);
+							ShowLevel(gr);
 							break;
 						case '+':
-							if (Level < Model.MaxLevel)
-								Level++;
+							if (model.getLevel() < Model.MaxLevel)
+								model.setLevel(model.getLevel() + 1);
 							k = 0;
-							ShowLevel(_gr);
+							ShowLevel(gr);
 							break;
 						}
 					}
-				} while ((int) (System.currentTimeMillis() - tc) <= (Model.MaxLevel - Level)
-						* TimeShift + MinTimeShift);
+				} while ((int) (System.currentTimeMillis() - tc) <= (Model.MaxLevel - model
+						.getLevel()) * TimeShift + MinTimeShift);
 			}
 			;
-			PasteFigure(model.getFigure());
+			model.pasteFigure(this, model.getFigure());
 			do {
 				NoChanges = true;
 				TestField();
 				if (!NoChanges) {
-					Delay(500);
-					PackField();
-					DrawField(_gr);
+					delay(500);
+					model.packField();
+					drawField();
 					Score += DScore;
-					ShowScore(_gr);
+					ShowScore(gr);
 					if (k >= FigToDrop) {
 						k = 0;
-						if (Level < Model.MaxLevel)
-							Level++;
-						ShowLevel(_gr);
+						if (model.getLevel() < Model.MaxLevel)
+							model.setLevel(model.getLevel() + 1);
+						ShowLevel(gr);
 					}
 				}
 			} while (!NoChanges);
-		} while (!FullField());
+		} while (!isFieldFull());
 	}
 
 	void ShowHelp(Graphics g) {
@@ -318,7 +310,7 @@ public class Columns extends Applet implements Runnable {
 	void ShowLevel(Graphics g) {
 		g.setColor(Color.black);
 		g.clearRect(LeftBorder + 100, 390, 100, 20);
-		g.drawString("Level: " + Level, LeftBorder + 100, 400);
+		g.drawString("Level: " + model.getLevel(), LeftBorder + 100, 400);
 	}
 
 	void ShowScore(Graphics g) {
@@ -327,21 +319,23 @@ public class Columns extends Applet implements Runnable {
 		g.drawString("Score: " + Score, LeftBorder, 400);
 	}
 
+	@Override
 	public void start() {
-		_gr.setColor(Color.black);
+		gr.setColor(Color.black);
 
 		// setBackground (new Color(180,180,180));
 
-		if (thr == null) {
-			thr = new Thread(this);
-			thr.start();
+		if (thread == null) {
+			thread = new Thread(this);
+			thread.start();
 		}
 	}
 
+	@Override
 	public void stop() {
-		if (thr != null) {
-			thr.stop();
-			thr = null;
+		if (thread != null) {
+			thread.stop();
+			thread = null;
 		}
 	}
 
@@ -355,10 +349,10 @@ public class Columns extends Applet implements Runnable {
 		for (i = 1; i <= Model.Depth; i++) {
 			for (j = 1; j <= Model.Width; j++) {
 				if (model.getFieldNew()[j][i] > 0) {
-					CheckNeighbours(j, i - 1, j, i + 1, i, j);
-					CheckNeighbours(j - 1, i, j + 1, i, i, j);
-					CheckNeighbours(j - 1, i - 1, j + 1, i + 1, i, j);
-					CheckNeighbours(j + 1, i - 1, j - 1, i + 1, i, j);
+					checkNeighbours(j, i - 1, j, i + 1, i, j);
+					checkNeighbours(j - 1, i, j + 1, i, i, j);
+					checkNeighbours(j - 1, i - 1, j + 1, i + 1, i, j);
+					checkNeighbours(j + 1, i - 1, j - 1, i + 1, i, j);
 				}
 			}
 		}
