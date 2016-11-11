@@ -30,37 +30,40 @@ public class Columns extends Applet implements Runnable {
 	Color MyStyles[] = { Color.black, Color.cyan, Color.blue, Color.red,
 			Color.green, Color.yellow, Color.pink, Color.magenta, Color.black };
 
-	int i;
+	// TODO move to model
 
-	int j;
+	private int k;
+	long Score;
+	long DScore;
 
-	int ii;
+	// ???
 
-	int k;
+	// View
 
-	int ch;
-	long Score, DScore, tc;
+	int charPressed;
+	long timestamp;
 	Font fCourier;
-	boolean NoChanges = true, KeyPressed = false;
+	boolean KeyPressed = false;
 	Graphics gr;
 
 	Thread thread = null;
 
 	Model model = new Model();
 
-	void checkNeighbours(int a, int b, int c, int d, int i, int j) {
-		if ((model.getFieldNew()[j][i] == model.getFieldNew()[a][b])
-				&& (model.getFieldNew()[j][i] == model.getFieldNew()[c][d])) {
-			model.getFieldOld()[a][b] = 0;
-			drawBox(a, b, 8);
-			model.getFieldOld()[j][i] = 0;
-			drawBox(j, i, 8);
-			model.getFieldOld()[c][d] = 0;
-			drawBox(c, d, 8);
-			NoChanges = false;
-			Score += (model.getLevel() + 1) * 10;
-			k++;
+	boolean checkNeighbours(int a, int b, int c, int d, int i, int j) {
+		if ((model.getFieldNew()[j][i] != model.getFieldNew()[a][b])
+				|| (model.getFieldNew()[j][i] != model.getFieldNew()[c][d])) {
+			return false;
 		}
+		model.getFieldOld()[a][b] = 0;
+		drawBox(a, b, 8);
+		model.getFieldOld()[j][i] = 0;
+		drawBox(j, i, 8);
+		model.getFieldOld()[c][d] = 0;
+		drawBox(c, d, 8);
+		Score += (model.getLevel() + 1) * 10;
+		k++;
+		return true;
 	}
 
 	void delay(long t) {
@@ -147,14 +150,14 @@ public class Columns extends Applet implements Runnable {
 	@Override
 	public boolean keyDown(Event e, int k) {
 		KeyPressed = true;
-		ch = e.key;
+		charPressed = e.key;
 		return true;
 	}
 
 	@Override
 	public boolean lostFocus(Event e, Object w) {
 		KeyPressed = true;
-		ch = 'P';
+		charPressed = 'P';
 		return true;
 	}
 
@@ -173,29 +176,20 @@ public class Columns extends Applet implements Runnable {
 
 	@Override
 	public void run() {
-		for (i = 0; i < Model.Width + 1; i++) {
-			for (j = 0; j < Model.Depth + 1; j++) {
-				model.getFieldNew()[i][j] = 0;
-				model.getFieldOld()[i][j] = 0;
-			}
-		}
-		model.setLevel(0);
-		Score = 0;
-		j = 0;
-		k = 0;
+		setup();
 		gr.setColor(Color.black);
 		requestFocus();
 
 		do {
-			tc = System.currentTimeMillis();
+			timestamp = System.currentTimeMillis();
 			model.setFigure(new Figure(Random));
 			drawFigure(model.getFigure());
 			while ((model.getFigure().y < Model.Depth - 2)
 					&& (model.getFieldNew()[model.getFigure().x][model
 							.getFigure().y + 3] == 0)) {
-				if ((int) (System.currentTimeMillis() - tc) > (Model.MaxLevel - model
+				if ((int) (System.currentTimeMillis() - timestamp) > (Model.MaxLevel - model
 						.getLevel()) * TimeShift + MinTimeShift) {
-					tc = System.currentTimeMillis();
+					timestamp = System.currentTimeMillis();
 					hideFigure(model.getFigure());
 					model.getFigure().y++;
 					drawFigure(model.getFigure());
@@ -205,7 +199,7 @@ public class Columns extends Applet implements Runnable {
 					delay(50);
 					if (KeyPressed) {
 						KeyPressed = false;
-						switch (ch) {
+						switch (charPressed) {
 						case Event.LEFT:
 							if ((model.getFigure().x > 1)
 									&& (model.getFieldNew()[model.getFigure().x - 1][model
@@ -224,25 +218,27 @@ public class Columns extends Applet implements Runnable {
 								drawFigure(model.getFigure());
 							}
 							break;
-						case Event.UP:
-							i = model.getFigure().c[1];
+						case Event.UP: {
+							int i = model.getFigure().c[1];
 							model.getFigure().c[1] = model.getFigure().c[2];
 							model.getFigure().c[2] = model.getFigure().c[3];
 							model.getFigure().c[3] = i;
 							drawFigure(model.getFigure());
+						}
 							break;
-						case Event.DOWN:
-							i = model.getFigure().c[1];
+						case Event.DOWN: {
+							int i = model.getFigure().c[1];
 							model.getFigure().c[1] = model.getFigure().c[3];
 							model.getFigure().c[3] = model.getFigure().c[2];
 							model.getFigure().c[2] = i;
 							drawFigure(model.getFigure());
+						}
 							break;
 						case ' ':
 							hideFigure(model.getFigure());
 							dropFigure(model.getFigure());
 							drawFigure(model.getFigure());
-							tc = 0;
+							timestamp = 0;
 							break;
 						case 'P':
 						case 'p':
@@ -252,7 +248,7 @@ public class Columns extends Applet implements Runnable {
 								drawFigure(model.getFigure());
 								delay(500);
 							}
-							tc = System.currentTimeMillis();
+							timestamp = System.currentTimeMillis();
 							break;
 						case '-':
 							if (model.getLevel() > 0)
@@ -268,29 +264,35 @@ public class Columns extends Applet implements Runnable {
 							break;
 						}
 					}
-				} while ((int) (System.currentTimeMillis() - tc) <= (Model.MaxLevel - model
+				} while ((int) (System.currentTimeMillis() - timestamp) <= (Model.MaxLevel - model
 						.getLevel()) * TimeShift + MinTimeShift);
 			}
-			;
 			model.pasteFigure(this, model.getFigure());
-			do {
-				NoChanges = true;
-				TestField();
-				if (!NoChanges) {
-					delay(500);
-					model.packField();
-					drawField();
-					Score += DScore;
-					ShowScore(gr);
-					if (k >= FigToDrop) {
-						k = 0;
-						if (model.getLevel() < Model.MaxLevel)
-							model.setLevel(model.getLevel() + 1);
-						ShowLevel(gr);
-					}
+			while (TestField()) {
+				delay(500);
+				model.packField();
+				drawField();
+				Score += DScore;
+				ShowScore(gr);
+				if (k >= FigToDrop) {
+					k = 0;
+					if (model.getLevel() < Model.MaxLevel)
+						model.setLevel(model.getLevel() + 1);
+					ShowLevel(gr);
 				}
-			} while (!NoChanges);
+			}
 		} while (!isFieldFull());
+	}
+
+	private void setup() {
+		for (int i = 0; i < Model.Width + 1; i++) {
+			for (int j = 0; j < Model.Depth + 1; j++) {
+				model.getFieldNew()[i][j] = 0;
+				model.getFieldOld()[i][j] = 0;
+			}
+		}
+		model.setLevel(0);
+		Score = 0;
 	}
 
 	void ShowHelp(Graphics g) {
@@ -339,7 +341,8 @@ public class Columns extends Applet implements Runnable {
 		}
 	}
 
-	void TestField() {
+	boolean TestField() {
+		boolean changed = false;
 		int i, j;
 		for (i = 1; i <= Model.Depth; i++) {
 			for (j = 1; j <= Model.Width; j++) {
@@ -349,12 +352,13 @@ public class Columns extends Applet implements Runnable {
 		for (i = 1; i <= Model.Depth; i++) {
 			for (j = 1; j <= Model.Width; j++) {
 				if (model.getFieldNew()[j][i] > 0) {
-					checkNeighbours(j, i - 1, j, i + 1, i, j);
-					checkNeighbours(j - 1, i, j + 1, i, i, j);
-					checkNeighbours(j - 1, i - 1, j + 1, i + 1, i, j);
-					checkNeighbours(j + 1, i - 1, j - 1, i + 1, i, j);
+					changed |= checkNeighbours(j, i - 1, j, i + 1, i, j);
+					changed |= checkNeighbours(j - 1, i, j + 1, i, i, j);
+					changed |= checkNeighbours(j - 1, i - 1, j + 1, i + 1, i, j);
+					changed |= checkNeighbours(j + 1, i - 1, j - 1, i + 1, i, j);
 				}
 			}
 		}
+		return changed;
 	}
 }
