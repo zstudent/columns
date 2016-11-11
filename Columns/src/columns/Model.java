@@ -1,7 +1,5 @@
 package columns;
 
-import java.awt.HeadlessException;
-
 import columns.model.Figure;
 
 @SuppressWarnings("serial")
@@ -14,6 +12,39 @@ public class Model implements GameEventListener {
 	private int fieldNew[][];
 	private int fieldOld[][];
 	private int Level;
+	private long totalScore;
+	private long deltaScore;
+	private int triplesCount;
+	private ModelListener listener;
+
+	public Model(ModelListener listener)  {
+		this.listener = listener;
+	}
+	
+	
+	public int getTriplesCount() {
+		return triplesCount;
+	}
+
+	public void setTriplesCount(int triplesCount) {
+		this.triplesCount = triplesCount;
+	}
+
+	public long getDeltaScore() {
+		return deltaScore;
+	}
+
+	public void setDeltaScore(long deltaScore) {
+		this.deltaScore = deltaScore;
+	}
+
+	public long getTotalScore() {
+		return totalScore;
+	}
+
+	public void setTotalScore(long totalScore) {
+		this.totalScore = totalScore;
+	}
 
 	public int getLevel() {
 		return Level;
@@ -21,10 +52,6 @@ public class Model implements GameEventListener {
 
 	public void setLevel(int level) {
 		Level = level;
-	}
-
-	public Model() throws HeadlessException {
-		super();
 	}
 
 	public Figure getFigure() {
@@ -101,5 +128,42 @@ public class Model implements GameEventListener {
 		fieldNew[f.x][f.y + 1] = f.c[2];
 		fieldNew[f.x][f.y + 2] = f.c[3];
 	}
+
+	boolean checkNeighbours(int a, int b, int c, int d, int i, int j) {
+		if ((getFieldNew()[j][i] != getFieldNew()[a][b])
+				|| (getFieldNew()[j][i] != getFieldNew()[c][d])) {
+			return false;
+		}
+		getFieldOld()[a][b] = 0;
+		getFieldOld()[j][i] = 0;
+		getFieldOld()[c][d] = 0;
+		setTotalScore(getTotalScore() + (getLevel() + 1) * 10);
+		setTriplesCount(getTriplesCount() + 1);
+		listener.gotTriple(a,b,c,d,i,j);
+		return true;
+	}
+
+
+	boolean testField() {
+		boolean changed = false;
+		int i, j;
+		for (i = 1; i <= Model.Depth; i++) {
+			for (j = 1; j <= Model.Width; j++) {
+				getFieldOld()[j][i] = getFieldNew()[j][i];
+			}
+		}
+		for (i = 1; i <= Model.Depth; i++) {
+			for (j = 1; j <= Model.Width; j++) {
+				if (getFieldNew()[j][i] > 0) {
+					changed |= checkNeighbours(j, i - 1, j, i + 1, i, j);
+					changed |= checkNeighbours(j - 1, i, j + 1, i, i, j);
+					changed |= checkNeighbours(j - 1, i - 1, j + 1, i + 1, i, j);
+					changed |= checkNeighbours(j + 1, i - 1, j - 1, i + 1, i, j);
+				}
+			}
+		}
+		return changed;
+	}
+
 
 }

@@ -11,7 +11,7 @@ import java.util.Random;
 import columns.model.Figure;
 
 @SuppressWarnings("serial")
-public class Columns extends Applet implements Runnable {
+public class Columns extends Applet implements Runnable, ModelListener {
 
 	static final int SL = 25;
 
@@ -30,14 +30,6 @@ public class Columns extends Applet implements Runnable {
 	Color MyStyles[] = { Color.black, Color.cyan, Color.blue, Color.red,
 			Color.green, Color.yellow, Color.pink, Color.magenta, Color.black };
 
-	// TODO move to model
-
-	private int k;
-	long Score;
-	long DScore;
-
-	// ???
-
 	// View
 
 	int charPressed;
@@ -48,22 +40,12 @@ public class Columns extends Applet implements Runnable {
 
 	Thread thread = null;
 
-	Model model = new Model();
+	Model model = new Model(this);
 
-	boolean checkNeighbours(int a, int b, int c, int d, int i, int j) {
-		if ((model.getFieldNew()[j][i] != model.getFieldNew()[a][b])
-				|| (model.getFieldNew()[j][i] != model.getFieldNew()[c][d])) {
-			return false;
-		}
-		model.getFieldOld()[a][b] = 0;
+	private void drawWhiteTriple(int a, int b, int c, int d, int i, int j) {
 		drawBox(a, b, 8);
-		model.getFieldOld()[j][i] = 0;
 		drawBox(j, i, 8);
-		model.getFieldOld()[c][d] = 0;
 		drawBox(c, d, 8);
-		Score += (model.getLevel() + 1) * 10;
-		k++;
-		return true;
 	}
 
 	void delay(long t) {
@@ -121,7 +103,7 @@ public class Columns extends Applet implements Runnable {
 			zz = Model.Depth;
 			while (model.getFieldNew()[f.x][zz] > 0)
 				zz--;
-			DScore = (((model.getLevel() + 1) * (Model.Depth * 2 - f.y - zz) * 2) % 5) * 5;
+			model.setDeltaScore((long) ((((model.getLevel() + 1) * (Model.Depth * 2 - f.y - zz) * 2) % 5) * 5));
 			f.y = zz - 2;
 		}
 	}
@@ -194,7 +176,7 @@ public class Columns extends Applet implements Runnable {
 					model.getFigure().y++;
 					drawFigure(model.getFigure());
 				}
-				DScore = 0;
+				model.setDeltaScore((long) 0);
 				do {
 					delay(50);
 					if (KeyPressed) {
@@ -253,13 +235,13 @@ public class Columns extends Applet implements Runnable {
 						case '-':
 							if (model.getLevel() > 0)
 								model.setLevel(model.getLevel() - 1);
-							k = 0;
+							model.setTriplesCount(0);
 							ShowLevel(gr);
 							break;
 						case '+':
 							if (model.getLevel() < Model.MaxLevel)
 								model.setLevel(model.getLevel() + 1);
-							k = 0;
+							model.setTriplesCount(0);
 							ShowLevel(gr);
 							break;
 						}
@@ -268,14 +250,14 @@ public class Columns extends Applet implements Runnable {
 						.getLevel()) * TimeShift + MinTimeShift);
 			}
 			model.pasteFigure(this, model.getFigure());
-			while (TestField()) {
+			while (model.testField()) {
 				delay(500);
 				model.packField();
 				drawField();
-				Score += DScore;
+				model.setTotalScore(model.getTotalScore() + model.getDeltaScore());
 				ShowScore(gr);
-				if (k >= FigToDrop) {
-					k = 0;
+				if (model.getTriplesCount() >= FigToDrop) {
+					model.setTriplesCount(0);
 					if (model.getLevel() < Model.MaxLevel)
 						model.setLevel(model.getLevel() + 1);
 					ShowLevel(gr);
@@ -292,7 +274,7 @@ public class Columns extends Applet implements Runnable {
 			}
 		}
 		model.setLevel(0);
-		Score = 0;
+		model.setTotalScore((long) 0);
 	}
 
 	void ShowHelp(Graphics g) {
@@ -318,7 +300,7 @@ public class Columns extends Applet implements Runnable {
 	void ShowScore(Graphics g) {
 		g.setColor(Color.black);
 		g.clearRect(LeftBorder, 390, 100, 20);
-		g.drawString("Score: " + Score, LeftBorder, 400);
+		g.drawString("Score: " + model.getTotalScore(), LeftBorder, 400);
 	}
 
 	@Override
@@ -341,24 +323,8 @@ public class Columns extends Applet implements Runnable {
 		}
 	}
 
-	boolean TestField() {
-		boolean changed = false;
-		int i, j;
-		for (i = 1; i <= Model.Depth; i++) {
-			for (j = 1; j <= Model.Width; j++) {
-				model.getFieldOld()[j][i] = model.getFieldNew()[j][i];
-			}
-		}
-		for (i = 1; i <= Model.Depth; i++) {
-			for (j = 1; j <= Model.Width; j++) {
-				if (model.getFieldNew()[j][i] > 0) {
-					changed |= checkNeighbours(j, i - 1, j, i + 1, i, j);
-					changed |= checkNeighbours(j - 1, i, j + 1, i, i, j);
-					changed |= checkNeighbours(j - 1, i - 1, j + 1, i + 1, i, j);
-					changed |= checkNeighbours(j + 1, i - 1, j - 1, i + 1, i, j);
-				}
-			}
-		}
-		return changed;
+	@Override
+	public void gotTriple(int a, int b, int c, int d, int i, int j) {
+		drawWhiteTriple(a, b, c, d, i, j);
 	}
 }
