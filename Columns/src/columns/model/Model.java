@@ -1,13 +1,14 @@
-package columns;
+package columns.model;
 
-import columns.model.Figure;
+import columns.Columns;
+import columns.GameEventListener;
 
 @SuppressWarnings("serial")
 public class Model implements GameEventListener {
 
-	protected static final int Depth = 15;
+	public static final int Depth = 15;
 	public static final int Width = 7;
-	protected static final int MaxLevel = 7;
+	public static final int MaxLevel = 7;
 	private Figure Fig;
 	private int fieldNew[][];
 	private int fieldOld[][];
@@ -108,7 +109,7 @@ public class Model implements GameEventListener {
 		
 	}
 
-	void packField() {
+	public void packField() {
 		int i, j, n;
 		for (i = 1; i <= Model.Width; i++) {
 			n = Model.Depth;
@@ -123,7 +124,7 @@ public class Model implements GameEventListener {
 		}
 	}
 
-	void pasteFigure(Columns columns, Figure f) {
+	public void pasteFigure(Columns columns, Figure f) {
 		fieldNew[f.x][f.y] = f.c[1];
 		fieldNew[f.x][f.y + 1] = f.c[2];
 		fieldNew[f.x][f.y + 2] = f.c[3];
@@ -144,7 +145,7 @@ public class Model implements GameEventListener {
 	}
 
 
-	boolean testField() {
+	public boolean testField() {
 		boolean changed = false;
 		int i, j;
 		for (i = 1; i <= Model.Depth; i++) {

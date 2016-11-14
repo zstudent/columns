@@ -9,6 +9,8 @@ import java.security.SecureRandom;
 import java.util.Random;
 
 import columns.model.Figure;
+import columns.model.Model;
+import columns.model.ModelListener;
 
 @SuppressWarnings("serial")
 public class Columns extends Applet implements Runnable, ModelListener {

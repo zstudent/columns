@@ -2,8 +2,6 @@ package columns.model;
 
 import java.util.Random;
 
-import columns.Model;
-
 public class Figure {
 
 	public int x = Model.Width / 2 + 1;
