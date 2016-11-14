@@ -19,8 +19,6 @@ public class Columns extends Applet implements Runnable, ModelListener {
 
 	static final int TimeShift = 250;
 
-	static final int FigToDrop = 33;
-
 	static final int MinTimeShift = 200;
 
 	static final int LeftBorder = 2;
@@ -42,7 +40,7 @@ public class Columns extends Applet implements Runnable, ModelListener {
 
 	Thread thread = null;
 
-	Model model = new Model(this);
+	public Model model = new Model(this);
 
 	private void drawWhiteTriple(int a, int b, int c, int d, int i, int j) {
 		drawBox(a, b, 8);
@@ -99,25 +97,6 @@ public class Columns extends Applet implements Runnable, ModelListener {
 		drawBox(f.x, f.y + 2, f.c[3]);
 	}
 
-	void dropFigure(Figure f) {
-		int zz;
-		if (f.y < Model.Depth - 2) {
-			zz = Model.Depth;
-			while (model.getFieldNew()[f.x][zz] > 0)
-				zz--;
-			model.setDeltaScore((long) ((((model.getLevel() + 1) * (Model.Depth * 2 - f.y - zz) * 2) % 5) * 5));
-			f.y = zz - 2;
-		}
-	}
-
-	boolean isFieldFull() {
-		for (int i = 1; i <= Model.Width; i++) {
-			if (model.getFieldNew()[i][3] > 0)
-				return true;
-		}
-		return false;
-	}
-
 	void hideFigure(Figure f) {
 		drawBox(f.x, f.y, 0);
 		drawBox(f.x, f.y + 1, 0);
@@ -126,8 +105,6 @@ public class Columns extends Applet implements Runnable, ModelListener {
 
 	@Override
 	public void init() {
-		model.setFieldNew(new int[Model.Width + 2][Model.Depth + 2]);
-		model.setFieldOld(new int[Model.Width + 2][Model.Depth + 2]);
 		gr = getGraphics();
 	}
 
@@ -151,16 +128,21 @@ public class Columns extends Applet implements Runnable, ModelListener {
 
 		g.setColor(Color.black);
 
-		ShowLevel(g);
-		ShowScore(g);
+		drawAll(g);
+
+		requestFocus();
+	}
+
+	public void drawAll(Graphics g) {
+		showLevel(g);
+		showScore(g);
 		drawField();
 		drawFigure(model.getFigure());
-		requestFocus();
 	}
 
 	@Override
 	public void run() {
-		setup();
+		model.setup();
 		gr.setColor(Color.black);
 		requestFocus();
 
@@ -168,9 +150,7 @@ public class Columns extends Applet implements Runnable, ModelListener {
 			timestamp = System.currentTimeMillis();
 			model.setFigure(new Figure(Random));
 			drawFigure(model.getFigure());
-			while ((model.getFigure().y < Model.Depth - 2)
-					&& (model.getFieldNew()[model.getFigure().x][model
-							.getFigure().y + 3] == 0)) {
+			while (model.isFigureAbleToMoveDown()) {
 				if ((int) (System.currentTimeMillis() - timestamp) > (Model.MaxLevel - model
 						.getLevel()) * TimeShift + MinTimeShift) {
 					timestamp = System.currentTimeMillis();
@@ -185,43 +165,21 @@ public class Columns extends Applet implements Runnable, ModelListener {
 						KeyPressed = false;
 						switch (charPressed) {
 						case Event.LEFT:
-							if ((model.getFigure().x > 1)
-									&& (model.getFieldNew()[model.getFigure().x - 1][model
-											.getFigure().y + 2] == 0)) {
-								hideFigure(model.getFigure());
-								model.getFigure().x--;
-								drawFigure(model.getFigure());
-							}
+							model.moveLeft();
 							break;
 						case Event.RIGHT:
-							if ((model.getFigure().x < Model.Width)
-									&& (model.getFieldNew()[model.getFigure().x + 1][model
-											.getFigure().y + 2] == 0)) {
-								hideFigure(model.getFigure());
-								model.getFigure().x++;
-								drawFigure(model.getFigure());
-							}
+							model.moveRight();
 							break;
 						case Event.UP: {
-							int i = model.getFigure().c[1];
-							model.getFigure().c[1] = model.getFigure().c[2];
-							model.getFigure().c[2] = model.getFigure().c[3];
-							model.getFigure().c[3] = i;
-							drawFigure(model.getFigure());
+							model.rotateUp();
 						}
 							break;
 						case Event.DOWN: {
-							int i = model.getFigure().c[1];
-							model.getFigure().c[1] = model.getFigure().c[3];
-							model.getFigure().c[3] = model.getFigure().c[2];
-							model.getFigure().c[2] = i;
-							drawFigure(model.getFigure());
+							model.rotateDown();
 						}
 							break;
 						case ' ':
-							hideFigure(model.getFigure());
-							dropFigure(model.getFigure());
-							drawFigure(model.getFigure());
+							model.drop();
 							timestamp = 0;
 							break;
 						case 'P':
@@ -235,16 +193,12 @@ public class Columns extends Applet implements Runnable, ModelListener {
 							timestamp = System.currentTimeMillis();
 							break;
 						case '-':
-							if (model.getLevel() > 0)
-								model.setLevel(model.getLevel() - 1);
-							model.setTriplesCount(0);
-							ShowLevel(gr);
+							model.descreaseLevel();
+							showLevel(gr);
 							break;
 						case '+':
-							if (model.getLevel() < Model.MaxLevel)
-								model.setLevel(model.getLevel() + 1);
-							model.setTriplesCount(0);
-							ShowLevel(gr);
+							model.increaseLevel();
+							showLevel(gr);
 							break;
 						}
 					}
@@ -256,30 +210,20 @@ public class Columns extends Applet implements Runnable, ModelListener {
 				delay(500);
 				model.packField();
 				drawField();
-				model.setTotalScore(model.getTotalScore() + model.getDeltaScore());
-				ShowScore(gr);
-				if (model.getTriplesCount() >= FigToDrop) {
+				model.setTotalScore(model.getTotalScore()
+						+ model.getDeltaScore());
+				showScore(gr);
+				if (model.getTriplesCount() >= Model.FigToDrop) {
 					model.setTriplesCount(0);
 					if (model.getLevel() < Model.MaxLevel)
 						model.setLevel(model.getLevel() + 1);
-					ShowLevel(gr);
+					showLevel(gr);
 				}
 			}
-		} while (!isFieldFull());
+		} while (!model.isFieldFull());
 	}
 
-	private void setup() {
-		for (int i = 0; i < Model.Width + 1; i++) {
-			for (int j = 0; j < Model.Depth + 1; j++) {
-				model.getFieldNew()[i][j] = 0;
-				model.getFieldOld()[i][j] = 0;
-			}
-		}
-		model.setLevel(0);
-		model.setTotalScore((long) 0);
-	}
-
-	void ShowHelp(Graphics g) {
+	void showHelp(Graphics g) {
 		g.setColor(Color.black);
 
 		g.drawString(" Keys available:", 200 - LeftBorder, 102);
@@ -293,13 +237,13 @@ public class Columns extends Applet implements Runnable, ModelListener {
 		g.drawString("Quit:     Esc or Q", 200 - LeftBorder, 190);
 	}
 
-	void ShowLevel(Graphics g) {
+	void showLevel(Graphics g) {
 		g.setColor(Color.black);
 		g.clearRect(LeftBorder + 100, 390, 100, 20);
 		g.drawString("Level: " + model.getLevel(), LeftBorder + 100, 400);
 	}
 
-	void ShowScore(Graphics g) {
+	void showScore(Graphics g) {
 		g.setColor(Color.black);
 		g.clearRect(LeftBorder, 390, 100, 20);
 		g.drawString("Score: " + model.getTotalScore(), LeftBorder, 400);
@@ -329,4 +273,10 @@ public class Columns extends Applet implements Runnable, ModelListener {
 	public void gotTriple(int a, int b, int c, int d, int i, int j) {
 		drawWhiteTriple(a, b, c, d, i, j);
 	}
+	
+	@Override
+	public void changed(Model model) {
+		drawAll(gr);
+	}
+	
 }

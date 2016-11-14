@@ -9,17 +9,20 @@ public class Model implements GameEventListener {
 	public static final int Depth = 15;
 	public static final int Width = 7;
 	public static final int MaxLevel = 7;
-	private Figure Fig;
+	private Figure fig;
 	private int fieldNew[][];
 	private int fieldOld[][];
-	private int Level;
+	private int level;
 	private long totalScore;
 	private long deltaScore;
 	private int triplesCount;
 	private ModelListener listener;
+	public static final int FigToDrop = 33;
 
 	public Model(ModelListener listener)  {
 		this.listener = listener;
+		this.fieldNew = new int[Model.Width + 2][Model.Depth + 2];
+		this.fieldOld = new int[Model.Width + 2][Model.Depth + 2];
 	}
 	
 	
@@ -48,19 +51,19 @@ public class Model implements GameEventListener {
 	}
 
 	public int getLevel() {
-		return Level;
+		return level;
 	}
 
 	public void setLevel(int level) {
-		Level = level;
+		this.level = level;
 	}
 
 	public Figure getFigure() {
-		return Fig;
+		return fig;
 	}
 
 	public void setFigure(Figure fig) {
-		Fig = fig;
+		this.fig = fig;
 	}
 
 	public int[][] getFieldNew() {
@@ -77,36 +80,6 @@ public class Model implements GameEventListener {
 
 	public void setFieldOld(int fieldOld[][]) {
 		this.fieldOld = fieldOld;
-	}
-
-	@Override
-	public void moveLeft() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void moveRight() {
-		// TODO implement move right
-		
-	}
-
-	@Override
-	public void rotateUp() {
-		// FIXME Auto-generated method stub
-		
-	}
-
-	@Override
-	public void rotateDown() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void drop() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	public void packField() {
@@ -164,6 +137,114 @@ public class Model implements GameEventListener {
 			}
 		}
 		return changed;
+	}
+
+
+	public boolean isFieldFull() {
+		for (int i = 1; i <= Model.Width; i++) {
+			if (getFieldNew()[i][3] > 0)
+				return true;
+		}
+		return false;
+	}
+
+
+	public void setup() {
+		for (int i = 0; i < Model.Width + 1; i++) {
+			for (int j = 0; j < Model.Depth + 1; j++) {
+				fieldNew[i][j] = 0;
+				fieldOld[i][j] = 0;
+			}
+		}
+		setLevel(0);
+		setTotalScore((long) 0);
+	}
+
+
+	public boolean isFigureAbleToMoveDown() {
+		return (fig.y < Model.Depth - 2)
+				&& (fieldNew[fig.x][fig.y + 3] == 0);
+	}
+
+
+	public boolean canFigureMoveLeft() {
+		return (fig.x > 1)
+				&& (fieldNew[fig.x - 1][fig.y + 2] == 0);
+	}
+
+
+	public boolean canFigureMoveRight() {
+		return (fig.x < Model.Width)
+				&& (fieldNew[fig.x + 1][fig.y + 2] == 0);
+	}
+
+
+	@Override
+	public void moveLeft() {
+		if (canFigureMoveLeft()) {
+			getFigure().x--;
+			listener.changed(this);
+		}
+	}
+
+
+	@Override
+	public void moveRight() {
+		if (canFigureMoveRight()) {
+			getFigure().x++;
+			listener.changed(this);
+		}
+	}
+
+
+	@Override
+	public void rotateUp() {
+		int i = getFigure().c[1];
+		getFigure().c[1] = getFigure().c[2];
+		getFigure().c[2] = getFigure().c[3];
+		getFigure().c[3] = i;
+		listener.changed(this);
+	}
+
+
+	@Override
+	public void rotateDown() {
+		int i = getFigure().c[1];
+		getFigure().c[1] = getFigure().c[3];
+		getFigure().c[3] = getFigure().c[2];
+		getFigure().c[2] = i;
+		listener.changed(this);
+	}
+
+
+	public void increaseLevel() {
+		if (level < Model.MaxLevel)
+			level++;
+		this.triplesCount = 0;
+		listener.changed(this);
+	}
+
+
+	public void descreaseLevel() {
+		if (level > 0)
+			level--;
+		this.triplesCount = 0;
+		listener.changed(this);
+	}
+
+
+	@Override
+	public void drop() {
+		int zz;
+		if (fig.y < Model.Depth - 2) {
+			zz = Model.Depth;
+			while (getFieldNew()[fig.x][zz] > 0)
+				zz--;
+			setDeltaScore((long) ((((getLevel() + 1)
+					* (Model.Depth * 2 - fig.y - zz) * 2) % 5) * 5));
+			fig.y = zz - 2;
+			listener.changed(this);
+		}
 	}
 
 
