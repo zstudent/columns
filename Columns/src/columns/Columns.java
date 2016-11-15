@@ -151,76 +151,91 @@ public class Columns extends Applet implements Runnable, ModelListener {
 			model.setFigure(new Figure(Random));
 			drawFigure(model.getFigure());
 			while (model.isFigureAbleToMoveDown()) {
-				if ((int) (System.currentTimeMillis() - timestamp) > (Model.MaxLevel - model
-						.getLevel()) * TimeShift + MinTimeShift) {
+				if (isTimeForMoveFigureOnLineDown()) {
 					timestamp = System.currentTimeMillis();
-					hideFigure(model.getFigure());
-					model.getFigure().y++;
-					drawFigure(model.getFigure());
+					moveFigureOneLineDown();
 				}
 				model.setDeltaScore((long) 0);
 				do {
 					delay(50);
 					if (KeyPressed) {
-						KeyPressed = false;
-						switch (charPressed) {
-						case Event.LEFT:
-							model.moveLeft();
-							break;
-						case Event.RIGHT:
-							model.moveRight();
-							break;
-						case Event.UP: {
-							model.rotateUp();
-						}
-							break;
-						case Event.DOWN: {
-							model.rotateDown();
-						}
-							break;
-						case ' ':
-							model.drop();
-							timestamp = 0;
-							break;
-						case 'P':
-						case 'p':
-							while (!KeyPressed) {
-								hideFigure(model.getFigure());
-								delay(500);
-								drawFigure(model.getFigure());
-								delay(500);
-							}
-							timestamp = System.currentTimeMillis();
-							break;
-						case '-':
-							model.descreaseLevel();
-							showLevel(gr);
-							break;
-						case '+':
-							model.increaseLevel();
-							showLevel(gr);
-							break;
-						}
+						processKeyPressed();
 					}
-				} while ((int) (System.currentTimeMillis() - timestamp) <= (Model.MaxLevel - model
-						.getLevel()) * TimeShift + MinTimeShift);
+				} while (!isTimeForMoveFigureOnLineDown());
 			}
 			model.pasteFigure(this, model.getFigure());
-			while (model.testField()) {
-				delay(500);
-				model.packField();
-				drawField();
-				model.setTotalScore(model.getTotalScore()
-						+ model.getDeltaScore());
-				showScore(gr);
-				if (model.getTriplesCount() >= Model.FigToDrop) {
-					model.setTriplesCount(0);
-					if (model.getLevel() < Model.MaxLevel)
-						model.setLevel(model.getLevel() + 1);
-					showLevel(gr);
-				}
-			}
+			processTriplets();
 		} while (!model.isFieldFull());
+	}
+
+	public void moveFigureOneLineDown() {
+		hideFigure(model.getFigure());
+		model.getFigure().y++;
+		drawFigure(model.getFigure());
+	}
+
+	public void processTriplets() {
+		while (model.testField()) {
+			delay(500);
+			model.packField();
+			drawField();
+			model.setTotalScore(model.getTotalScore()
+					+ model.getDeltaScore());
+			showScore(gr);
+			if (model.getTriplesCount() >= Model.FigToDrop) {
+				model.setTriplesCount(0);
+				if (model.getLevel() < Model.MaxLevel)
+					model.setLevel(model.getLevel() + 1);
+				showLevel(gr);
+			}
+		}
+	}
+
+	public void processKeyPressed() {
+		KeyPressed = false;
+		switch (charPressed) {
+		case Event.LEFT:
+			model.moveLeft();
+			break;
+		case Event.RIGHT:
+			model.moveRight();
+			break;
+		case Event.UP: {
+			model.rotateUp();
+		}
+			break;
+		case Event.DOWN: {
+			model.rotateDown();
+		}
+			break;
+		case ' ':
+			model.drop();
+			timestamp = 0;
+			break;
+		case 'P':
+		case 'p':
+			while (!KeyPressed) {
+				hideFigure(model.getFigure());
+				delay(500);
+				drawFigure(model.getFigure());
+				delay(500);
+			}
+			timestamp = System.currentTimeMillis();
+			break;
+		case '-':
+			model.descreaseLevel();
+			showLevel(gr);
+			break;
+		case '+':
+			model.increaseLevel();
+			showLevel(gr);
+			break;
+		}
+	}
+
+	public boolean isTimeForMoveFigureOnLineDown() {
+		return (int) (System.currentTimeMillis() - timestamp) > (Model.MaxLevel - model
+				.getLevel()) * TimeShift + MinTimeShift;
 	}
 
 	void showHelp(Graphics g) {
