@@ -5,6 +5,9 @@ import java.awt.Color;
 import java.awt.Event;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.security.SecureRandom;
 import java.util.Random;
 
@@ -13,7 +16,7 @@ import columns.model.Model;
 import columns.model.ModelListener;
 
 @SuppressWarnings("serial")
-public class Columns extends Applet implements Runnable, ModelListener {
+public class Columns extends Applet implements ModelListener {
 
 	static final int SL = 25;
 
@@ -106,13 +109,16 @@ public class Columns extends Applet implements Runnable, ModelListener {
 	@Override
 	public void init() {
 		gr = getGraphics();
-	}
-
-	@Override
-	public boolean keyDown(Event e, int k) {
-		KeyPressed = true;
-		charPressed = e.key;
-		return true;
+		
+		addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				KeyPressed = true;
+				charPressed = e.getKeyCode();
+				processKeyPressed();
+				checkConditions();
+			}
+		});
 	}
 
 	@Override
@@ -140,38 +146,29 @@ public class Columns extends Applet implements Runnable, ModelListener {
 		drawFigure(model.getFigure());
 	}
 
-	@Override
-	public void run() {
-		model.setup();
-		gr.setColor(Color.black);
-		requestFocus();
-
-		do {
-			timestamp = System.currentTimeMillis();
-			model.setFigure(new Figure(Random));
-			drawFigure(model.getFigure());
-			while (model.isFigureAbleToMoveDown()) {
-				if (isTimeForMoveFigureOnLineDown()) {
-					timestamp = System.currentTimeMillis();
-					moveFigureOneLineDown();
-				}
-				model.setDeltaScore((long) 0);
-				do {
-					delay(50);
-					if (KeyPressed) {
-						processKeyPressed();
-					}
-				} while (!isTimeForMoveFigureOnLineDown());
-			}
-			model.pasteFigure(this, model.getFigure());
-			processTriplets();
-		} while (!model.isFieldFull());
+	public void launchNewFigure() {
+		model.setFigure(new Figure(Random));
+		drawFigure(model.getFigure());
 	}
 
 	public void moveFigureOneLineDown() {
 		hideFigure(model.getFigure());
 		model.getFigure().y++;
 		drawFigure(model.getFigure());
+		model.setDeltaScore((long) 0);
+		checkConditions();
+	}
+
+	private void checkConditions() {
+		if (!model.isFigureAbleToMoveDown()) {
+			model.pasteFigure(this, model.getFigure());
+			processTriplets();
+			launchNewFigure();
+		}
+		
+		if (model.isFieldFull()) {
+			// game over!
+		}
 	}
 
 	public void processTriplets() {
@@ -179,8 +176,7 @@ public class Columns extends Applet implements Runnable, ModelListener {
 			delay(500);
 			model.packField();
 			drawField();
-			model.setTotalScore(model.getTotalScore()
-					+ model.getDeltaScore());
+			model.setTotalScore(model.getTotalScore() + model.getDeltaScore());
 			showScore(gr);
 			if (model.getTriplesCount() >= Model.FigToDrop) {
 				model.setTriplesCount(0);
@@ -194,26 +190,25 @@ public class Columns extends Applet implements Runnable, ModelListener {
 	public void processKeyPressed() {
 		KeyPressed = false;
 		switch (charPressed) {
-		case Event.LEFT:
+		case KeyEvent.VK_LEFT:
 			model.moveLeft();
 			break;
-		case Event.RIGHT:
+		case KeyEvent.VK_RIGHT:
 			model.moveRight();
 			break;
-		case Event.UP: {
+		case KeyEvent.VK_UP: {
 			model.rotateUp();
 		}
 			break;
-		case Event.DOWN: {
+		case KeyEvent.VK_DOWN: {
 			model.rotateDown();
 		}
 			break;
-		case ' ':
+		case KeyEvent.VK_SPACE:
 			model.drop();
 			timestamp = 0;
 			break;
-		case 'P':
-		case 'p':
+		case KeyEvent.VK_P:
 			while (!KeyPressed) {
 				hideFigure(model.getFigure());
 				delay(500);
@@ -222,11 +217,11 @@ public class Columns extends Applet implements Runnable, ModelListener {
 			}
 			timestamp = System.currentTimeMillis();
 			break;
-		case '-':
+		case KeyEvent.VK_MINUS:
 			model.descreaseLevel();
 			showLevel(gr);
 			break;
-		case '+':
+		case KeyEvent.VK_PLUS:
 			model.increaseLevel();
 			showLevel(gr);
 			break;
@@ -234,8 +229,11 @@ public class Columns extends Applet implements Runnable, ModelListener {
 	}
 
 	public boolean isTimeForMoveFigureOnLineDown() {
-		return (int) (System.currentTimeMillis() - timestamp) > (Model.MaxLevel - model
-				.getLevel()) * TimeShift + MinTimeShift;
+		return (int) (System.currentTimeMillis() - timestamp) > getMoveOneLineDownDelay();
+	}
+
+	public long getMoveOneLineDownDelay() {
+		return (Model.MaxLevel - model.getLevel()) * TimeShift + MinTimeShift;
 	}
 
 	void showHelp(Graphics g) {
@@ -268,12 +266,13 @@ public class Columns extends Applet implements Runnable, ModelListener {
 	public void start() {
 		gr.setColor(Color.black);
 
-		// setBackground (new Color(180,180,180));
+		model.setup();
+		gr.setColor(Color.black);
+		requestFocus();
+		launchNewFigure();
 
-		if (thread == null) {
-			thread = new Thread(this);
-			thread.start();
-		}
+		new Thread(new Timer(this::moveFigureOneLineDown,
+				this::getMoveOneLineDownDelay)).start();
 	}
 
 	@Override
@@ -288,10 +287,10 @@ public class Columns extends Applet implements Runnable, ModelListener {
 	public void gotTriple(int a, int b, int c, int d, int i, int j) {
 		drawWhiteTriple(a, b, c, d, i, j);
 	}
-	
+
 	@Override
 	public void changed(Model model) {
 		drawAll(gr);
 	}
-	
+
 }
