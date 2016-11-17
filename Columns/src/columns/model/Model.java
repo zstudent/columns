@@ -1,7 +1,6 @@
 package columns.model;
 
 import columns.Columns;
-import columns.GameEventListener;
 
 @SuppressWarnings("serial")
 public class Model implements GameEventListener {
